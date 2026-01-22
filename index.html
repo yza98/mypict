@@ -3,366 +3,484 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Pictionary Pro 2026</title>
-    <script src="https://cdn.tailwindcss.com"></script> <!-- Estilos personalizados -->
-    <style>
-        /* --- Estilos ya presentes y fallback --- */
-        .token {
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>My Pictionary</title>
+    <link rel="icon"
+        href="https://img.utdstc.com/icon/50d/8ba/50d8baa854e0e3d3be30e31340445d690976e13f6e46eb8976097db5551c4861:200"
+        type="image/png">
 
-        }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- Estilos previos / fallback --- */
 
         @keyframes pulse-red {
 
             0%,
             100% {
-                opacity: 1;
-
+                opacity: 1
             }
 
             50% {
-                opacity: 0.5;
-
+                opacity: 0.5
             }
         }
 
         .timer-low {
             animation: pulse-red 0.5s infinite;
-
             color: #ef4444;
-
-        }
-
-        /* Fallback robusto (aplica si Tailwind no se carga) */
-        [id^="tks-"] {
-            position: absolute !important;
-
-            inset: 0 !important;
-
-            display: flex !important;
-
-            align-items: center !important;
-
-            justify-content: center !important;
-
-            gap: 0.25rem !important;
-
-            padding: 0.25rem !important;
-
-            pointer-events: none !important;
-
-            z-index: 30 !important;
-
         }
 
         .token {
-            width: 20px !important;
-
-            height: 20px !important;
-
-            border-radius: 9999px !important;
-
-            border: 2px solid rgba(0, 0, 0, 0.6) !important;
-
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important;
-
-            display: inline-block !important;
-
-            vertical-align: middle !important;
-
+            width: calc(var(--tile-size) * 0.36);
+            height: calc(var(--tile-size) * 0.36);
+            border-radius: 9999px;
+            border: 2px solid rgba(0, 0, 0, .6);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+            transition: transform .2s ease, box-shadow .2s ease;
         }
 
         .token.active {
-            transform: scale(1.12) !important;
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, .5);
+        }
 
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06) !important;
-
-            z-index: 40 !important;
-
+        .tile-active {
+            outline: 3px solid white;
+            outline-offset: -3px;
+            box-shadow: 0 0 12px rgba(255, 255, 255, .6);
         }
 
         #center-img-wrap {
             position: absolute !important;
-
             z-index: 0 !important;
-
             pointer-events: none !important;
-
         }
 
         #dice-btn {
             width: 96px !important;
-
             height: 96px !important;
-
             border-radius: 1rem !important;
-
             background: #fff !important;
-
             color: #0f172a !important;
-
             font-size: 28px !important;
-
             display: flex !important;
-
             align-items: center !important;
-
             justify-content: center !important;
-
             border: none !important;
-
         }
 
         #dice-face {
             font-size: 28px !important;
-
             line-height: 1 !important;
-
             display: inline-block !important;
-
         }
 
-        /* --- Animación dado y cara final --- */
+        /* Animación del dado y cara final */
         @keyframes dice-roll-rotate {
             0% {
-                transform: rotate(0deg) scale(1);
-
+                transform: rotate(0deg) scale(1)
             }
 
             50% {
-                transform: rotate(180deg) scale(1.03);
-
+                transform: rotate(180deg) scale(1.03)
             }
 
             100% {
-                transform: rotate(360deg) scale(1);
-
+                transform: rotate(360deg) scale(1)
             }
         }
 
         .dice-rolling {
             animation: dice-roll-rotate 0.8s linear infinite;
-
         }
 
         .dice-face-final {
             font-size: 40px !important;
-
             transform: scale(1.25);
-
             transition: transform 200ms ease, font-size 200ms ease;
-
             display: inline-block;
-
             line-height: 1 !important;
-
         }
 
-        /* --- Responsive escalado del tablero: NO scroll horizontal --- */
+        /* --- Responsive: escalado del tablero, cambio de layout lateral en landscape/desktop --- */
         :root {
             --tile-size: 54px;
-
-            /* tamaño base antes de escala */
             --tile-gap: 8px;
-
             --board-scale: 1;
-
+            --controls-width: 360px;
         }
 
-        /* wrapper que controla el espacio y el scroll vertical (si fuese necesario) */
+        /* contenedor general de la pantalla de juego: header arriba, main abajo que cambia de layout */
+        .game-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* header (ya existente) */
+        .game-header {
+            flex: 0 0 auto;
+        }
+
+        /* main area: por defecto columna (board arriba, controles abajo) */
+        .game-main {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            gap: 0;
+            align-items: stretch;
+        }
+
+        /* wrapper del tablero y el tablero en sí */
+        /*#board-wrap {
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 1rem;
+            box-sizing: border-box;
+            flex: 1 1 auto;
+        }*/
+
         #board-wrap {
             width: 100%;
-
+            max-width: 100vw;
             overflow-x: hidden;
-
-            /* sin scroll horizontal */
             overflow-y: auto;
-
-            /* permitir vertical si hace falta */
-            -webkit-overflow-scrolling: touch;
-
-            position: relative;
-
             display: flex;
-
             justify-content: center;
-
-            /* centrado horizontal del tablero escalado */
+            box-sizing: border-box;
         }
 
-        /* tablero: grid "natural" que será escalado con transform */
         #board {
             display: grid;
-
             grid-template-columns: repeat(11, var(--tile-size));
-
             grid-auto-rows: var(--tile-size);
-
             gap: var(--tile-gap);
-
             transform-origin: top center;
-
             transform: scale(var(--board-scale));
-
             will-change: transform;
-
             position: relative;
-
-            /* para los tiles */
             z-index: 10;
-
             touch-action: manipulation;
-
+            background: transparent;
         }
 
-        /* casillas como elementos de la grid */
         [id^="tile-"] {
             width: var(--tile-size);
-
             height: var(--tile-size);
-
             min-width: 24px;
-
             min-height: 24px;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             border-radius: 0.5rem;
-
             box-sizing: border-box;
-
             position: relative;
-
             overflow: visible;
-
         }
 
-        /* tokens y posición relativa */
+        /* controls panel (por defecto abajo) */
+        #controls-panel {
+            flex: 0 0 auto;
+            padding: 1.25rem;
+            box-sizing: border-box;
+            background: transparent;
+        }
+
+        /* tokens relativos al tile-size */
         [id^="tks-"] {
+            position: absolute;
             inset: 0;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             gap: 0.25rem;
-
             padding: 0.25rem;
-
             pointer-events: none;
-
+            z-index: 30;
         }
 
-        .token {
-            width: calc(var(--tile-size) * 0.36);
-
-            height: calc(var(--tile-size) * 0.36);
-
-            min-width: 12px;
-
-            min-height: 12px;
-
-            border-width: 2px;
-
-        }
-
-        /* botón dado relativo al tile-size */
+        /* dado relativo */
         #dice-btn {
-            width: calc(var(--tile-size) * 1.6);
-
-            height: calc(var(--tile-size) * 1.6);
-
-            font-size: calc(var(--tile-size) * 0.45);
-
+            width: calc(var(--tile-size)*1.6);
+            height: calc(var(--tile-size)*1.6);
+            font-size: calc(var(--tile-size)*0.45);
         }
 
         .dice-face-final {
-            font-size: calc(var(--tile-size) * 0.9) !important;
-
+            font-size: calc(var(--tile-size)*0.9) !important;
             transform: scale(1.15);
-
         }
 
-        /* imagen central debe ajustarse a la caja donde se sitúa */
         #center-img-wrap img {
             object-fit: contain;
-
             width: 100%;
-
             height: 100%;
-
         }
 
-        /* media queries: reducimos tamaño base */
-        @media (max-width: 1100px) {
+        @media (max-width:1100px) {
             :root {
                 --tile-size: 48px;
-
                 --tile-gap: 6px;
-
             }
         }
 
-        @media (max-width: 820px) {
+        @media (max-width:820px) {
             :root {
                 --tile-size: 44px;
-
                 --tile-gap: 6px;
-
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width:480px) {
             :root {
                 --tile-size: 40px;
-
                 --tile-gap: 4px;
-
             }
 
             .p-6 {
                 padding: 0.75rem !important;
-
             }
 
             .text-7xl {
                 font-size: 3rem !important;
-
             }
         }
 
-        @media (max-width: 360px) {
+        @media (max-width:360px) {
             :root {
                 --tile-size: 36px;
-
                 --tile-gap: 4px;
-
             }
 
             #dice-btn {
                 width: 68px !important;
-
                 height: 68px !important;
-
                 font-size: 20px !important;
-
             }
 
             .dice-face-final {
-                font-size: 30px !important;
+                font-size: calc(var(--tile-size)*1.3) !important;
+                transform: scale(1.4);
+            }
 
+        }
+
+        /* --- Cambio a layout lateral cuando hay ancho disponible o en landscape --- */
+        /* Ajusta el min-width/orientation thresholds a tu gusto */
+        @media (min-width: 900px),
+        (orientation: landscape) and (min-width: 420px) {
+            .game-main {
+                flex-direction: row;
+                align-items: stretch;
+                gap: 0;
+            }
+
+            #board-wrap {
+                flex: 1 1 auto;
+                padding: 1.5rem;
+            }
+
+            #controls-panel {
+                flex: 0 0 var(--controls-width);
+                width: var(--controls-width);
+                border-left: 1px solid rgba(148, 163, 184, 0.06);
+                background: rgba(2, 6, 23, 0.35);
+            }
+
+            /* asegurar que panel de controles permita scroll si es necesario */
+            #controls-panel {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* si se quiere, mantener panel con fondo estándar */
+            #controls-panel .panel-inner {
+                background: #0f172a;
+                border-radius: 1rem;
+                padding: 0.75rem;
+            }
+
+            /* ajustar pill / header dentro del panel para ocupar espacio correctamente */
+            .controls-top {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
+            }
+
+            .controls-bottom {
+                margin-top: 0.75rem;
+            }
+
+            button {
+                min-height: 44px;
+                touch-action: manipulation;
+            }
+
+            button:active {
+                transform: scale(0.96);
             }
         }
 
-        /* asegurar que el wrap tenga suficiente altura para contener el tablero escalado */
-        /* el script ajustará el height dinámicamente según escala para facilitar scroll vertical */
+        .light-mode {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+
+        .light-mode .bg-slate-800,
+        .light-mode .bg-slate-900,
+        .light-mode .bg-slate-950 {
+            background-color: #e5e7eb !important;
+            color: #0f172a !important;
+        }
+
+        .light-mode #target-word {
+            color: #0f172a !important;
+            /* slate-900 */
+        }
+
+        .light-mode #word-reveal-area {
+            background-color: transparent;
+        }
+
+        @media (max-width: 360px) {
+            #board {
+                max-width: 100%;
+            }
+        }
+
+        @media (min-width: 900px),
+        (orientation: landscape) and (min-width: 600px) {
+            #board-wrap {
+                overflow-y: hidden !important;
+                height: auto !important;
+                align-items: center;
+            }
+
+            @media (max-width: 480px) {
+                #current-team-name {
+                    font-size: 1.25rem;
+                    /* ~ text-lg */
+                    line-height: 1.1;
+                    max-width: 65vw;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                #status-badge {
+                    font-size: 9px;
+                    padding: 0.25rem 0.5rem;
+                    white-space: nowrap;
+                }
+
+                #turn-label {
+                    font-size: 9px;
+                }
+            }
+
+        }
+
+        @media (min-width: 640px) {
+            #game-screen .game-header>div:last-child {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            #game-screen .game-header>div:last-child>div:last-child {
+                margin-left: 0.5rem;
+            }
+        }
+
+        /* ===================== */
+        /* 📺 MODO TV (visual) */
+        /* ===================== */
+
+        .tv-mode {
+            --tv-scale: 1.25;
+        }
+
+        .tv-mode .game-header {
+            padding: 2rem 2.5rem;
+        }
+
+        .tv-mode #current-team-name {
+            font-size: calc(2.5rem * var(--tv-scale)) !important;
+            line-height: 1.1;
+        }
+
+        .tv-mode #status-badge {
+            font-size: 1.1rem;
+            padding: 0.6rem 1.2rem;
+        }
+
+        .tv-mode #turn-label {
+            font-size: 1rem;
+        }
+
+        .tv-mode #target-word {
+            font-size: calc(3.5rem * var(--tv-scale)) !important;
+            letter-spacing: 0.06em;
+        }
+
+        .tv-mode button {
+            font-size: 1rem;
+            padding: 0.6rem 1.2rem;
+        }
+
+        @keyframes turn-flash {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .turn-animate {
+            animation: turn-flash 0.4s ease-out;
+        }
+
+        @keyframes header-pulse {
+            0% {
+                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            }
+
+            100% {
+                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+
+        .header-turn-indicator {
+            animation: header-pulse 0.6s ease-out;
+        }
+
+        #center-image {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -418,339 +536,320 @@
             </div>
         </div>
     </div> <!-- PANTALLA DE JUEGO -->
-    <div id="game-screen" class="hidden flex flex-col h-screen max-w-4xl mx-auto"> <!-- Info Superior -->
-        <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-end">
+    <div id="game-screen" class="game-screen hidden"> <!-- HEADER -->
+        <div class="game-header p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-end">
             <div>
                 <p id="turn-label" class="text-[10px] font-bold text-slate-400 uppercase mb-1">Turno actual</p>
                 <h2 id="current-team-name" class="text-2xl font-black leading-none">---</h2>
             </div>
-            <div class="flex items-center gap-3">
-                <div id="status-badge"
-                    class="bg-slate-900 px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-600">FASE:
-                    PREPARACIÓN</div> <button id="reset-btn" onclick="confirmReset()"
-                    class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-sm">REINICIAR</button>
-            </div>
-        </div>
-        <!-- Tablero: wrapper para controlar escalado -->
-        <div id="board-wrap" class="flex-1 p-4 bg-slate-950 relative">
-            <!-- board es el grid "natural" que será escalado -->
-            <div id="board" class="mx-auto"></div>
-            <!-- Imagen central: posicionada respecto al wrapper (se calcula dinámicamente) -->
-            <div id="center-img-wrap" class="absolute z-0 pointer-events-none"></div>
-        </div>
+            <div class="flex flex-col items-end gap-2">
 
-        <!-- PANEL DE CONTROL -->
-        <div
-            class="p-6 bg-slate-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] border-t border-slate-700">
-            <div id="cat-display" class="flex flex-col items-center mb-6">
-                <div id="cat-pill"
-                    class="px-6 py-1.5 rounded-full text-[10px] font-black tracking-widest border-2 border-white/20 mb-2">
-                    ---</div>
-                <p id="cat-instruction" class="text-slate-400 text-xs text-center px-4 italic font-medium">---</p>
-            </div>
-
-            <div id="ui-move" class="hidden flex flex-col items-center">
-                <p class="text-green-400 font-black mb-4 uppercase tracking-tighter">¡Acierto! Lanza el dado</p>
-                <button id="dice-btn" onclick="rollDice()"
-                    class="bg-white text-slate-900 rounded-3xl text-5xl shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:rotate-12">
-                    <span id="dice-face">🎲</span>
-                </button>
-            </div>
-
-            <div id="ui-draw" class="space-y-4">
-                <button id="btn-see-card" onclick="stepRevealWord()"
-                    class="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-lg shadow-lg transition-all active:scale-95">VER
-                    TARJETA</button>
-
-                <div id="word-reveal-area" class="hidden">
-                    <div class="bg-slate-900 border-2 border-yellow-500/50 p-5 rounded-2xl text-center mb-4">
-                        <span class="text-[10px] text-yellow-500 font-bold block mb-1 uppercase tracking-widest">Palabra
-                            a dibujar:</span>
-                        <h3 id="target-word" class="text-3xl font-black text-white uppercase tracking-tight">---</h3>
+                <!-- Fila superior: fase + reiniciar -->
+                <div class="flex items-center gap-2">
+                    <div id="status-badge"
+                        class="bg-slate-900 px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-600">
+                        FASE: PREPARACIÓN
                     </div>
 
-                    <div class="flex gap-3">
-                        <button id="btn-change-word" onclick="changeWord()"
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-black text-sm">CAMBIAR
-                            PALABRA (<span id="change-left">3</span>)</button>
-                        <button id="btn-start-timer" onclick="stepStartTimer()"
-                            class="flex-1 bg-emerald-600 py-3 rounded-xl font-black text-sm animate-bounce">¡INICIAR
-                            TIEMPO!</button>
-                    </div>
+                    <button id="reset-btn" onclick="confirmReset()"
+                        class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-sm">
+                        REINICIAR
+                    </button>
                 </div>
 
-                <div id="timer-active-area" class="hidden text-center">
-                    <div id="timer-text"
-                        class="text-7xl font-mono font-black mb-8 tabular-nums tracking-tighter text-white">01:00</div>
-                    <div id="normal-actions" class="flex gap-4">
-                        <button onclick="resolveTurn(false)"
-                            class="flex-1 bg-red-600/20 border-2 border-red-600 text-red-500 py-4 rounded-xl font-black uppercase">Fallo</button>
-                        <button onclick="resolveTurn(true)"
-                            class="flex-1 bg-green-600 py-4 text-white rounded-xl font-black uppercase shadow-lg shadow-green-900/40">¡Adivinada!</button>
+                <!-- Fila inferior: sonido y tema -->
+                <div class="flex items-center gap-2">
+                    <button id="sound-toggle" aria-label="Activar o desactivar sonido" onclick="toggleSound()"
+                        class="px-3 py-1 rounded-lg bg-slate-700 text-xs font-bold">
+                        🔊
+                    </button>
+                    <button id="theme-toggle" aria-label="Cambiar modo claro u oscuro" onclick="toggleTheme()"
+                        class="px-3 py-1 rounded-lg bg-slate-700 text-xs font-bold">
+                        🌙
+                    </button>
+                    <!--
+                    <button id="tv-toggle" aria-label="Activar modo TV" onclick="toggleTVMode()"
+                        class="px-3 py-1 rounded-lg bg-slate-700 text-xs font-bold">
+                        📺
+                    </button>
+                    -->
+
+                </div>
+
+            </div>
+
+        </div>
+        <!-- MAIN: board + controls (se reordena con media queries) -->
+        <div class="game-main">
+            <div id="board-wrap" class="flex-1 p-4 bg-slate-950 relative">
+                <div id="board" class="mx-auto"></div>
+                <div id="center-img-wrap" class="absolute z-0 pointer-events-none"></div>
+            </div>
+
+            <div id="controls-panel">
+                <div
+                    class="panel-inner bg-slate-800 p-6 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] border-t border-slate-700">
+                    <div id="cat-display" class="flex flex-col items-center mb-6 controls-top">
+                        <div id="cat-pill"
+                            class="px-6 py-1.5 rounded-full text-[10px] font-black tracking-widest border-2 border-white/20 mb-2">
+                            ---</div>
+                        <p id="cat-instruction" class="text-slate-400 text-xs text-center px-4 italic font-medium">---
+                        </p>
                     </div>
 
-                    <div id="allplay-actions" class="hidden space-y-3">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase italic">¿Quién adivinó primero?</p>
-                        <div id="winner-selector" class="flex flex-wrap justify-center gap-2"></div>
+                    <div id="ui-move" class="hidden flex flex-col items-center">
+                        <p class="text-green-400 font-black mb-4 uppercase tracking-tighter">¡Acierto! Lanza el dado</p>
+                        <button id="dice-btn" onclick="rollDice()" aria-label="Lanzar dado"
+                            class="bg-white text-slate-900 rounded-3xl text-5xl shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:rotate-12">
+                            <span id="dice-face">🎲</span>
+                        </button>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
+                    <div id="ui-draw" class="space-y-4 controls-bottom">
+                        <button id="btn-see-card" onclick="stepRevealWord()" aria-label="Ver palabra para dibujar"
+                            class="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-lg shadow-lg transition-all active:scale-95">VER
+                            TARJETA</button>
+
+                        <div id="word-reveal-area" class="hidden">
+                            <div class="bg-slate-900 border-2 border-yellow-500/50 p-5 rounded-2xl text-center mb-4">
+                                <span
+                                    class="text-[10px] text-yellow-500 font-bold block mb-1 uppercase tracking-widest">Palabra
+                                    a dibujar:</span>
+                                <h3 id="target-word" class="text-3xl font-black text-white uppercase tracking-tight">---
+                                </h3>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="btn-change-word" onclick="changeWord()"
+                                    aria-label="Cambiar palabra para dibujar"
+                                    class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-black text-sm">CAMBIAR
+                                    (<span id="change-left">3</span>)
+                                </button>
+                                <button id="btn-start-timer" onclick="stepStartTimer()"
+                                    aria-label="Iniciar temporizador de dibujo"
+                                    class="flex-1 bg-emerald-600 py-3 rounded-xl font-black text-sm animate-bounce">¡INICIAR
+                                    TIEMPO!</button>
+                            </div>
+                        </div>
+
+                        <div id="timer-active-area" class="hidden text-center">
+                            <div id="timer-text"
+                                class="text-7xl font-mono font-black mb-8 tabular-nums tracking-tighter text-white">
+                                01:00</div>
+                            <div id="normal-actions" class="flex gap-4">
+                                <button onclick="resolveTurn(false)"
+                                    class="flex-1 bg-red-600/20 border-2 border-red-600 text-red-500 py-4 rounded-xl font-black uppercase">Fallo</button>
+                                <button onclick="resolveTurn(true)"
+                                    class="flex-1 bg-green-600 py-4 text-white rounded-xl font-black uppercase shadow-lg shadow-green-900/40">¡Adivinada!</button>
+                            </div>
+
+                            <div id="allplay-actions" class="hidden space-y-3">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase italic">¿Quién adivinó primero?
+                                </p>
+                                <div id="winner-selector" class="flex flex-wrap justify-center gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- panel-inner -->
+            </div> <!-- controls-panel -->
+        </div> <!-- game-main -->
+    </div> <!-- game-screen -->
     <audio id="victory-audio"></audio>
     <audio id="defeat-audio"></audio>
     <audio id="tick-audio"></audio>
 
-    <!-- JSON de palabras (ya integrado) -->
+    <!-- WORD LIST JSON -->
     <script id="words-json" type="application/json">
-        { "AMARILLO": ["Messi","Picasso","Miguel de Cervantes","Shakira","Frida Kahlo","Beyoncé","Messalina","Atenas","Roma","Madrid","Barcelona","Londres","París","Tokio","Nueva York","Buenos Aires","Sídney","El Cairo","Moscú","Lima","Cuzco","Quito","Lisboa","Santiago","Bogotá","Caracas","Montevideo","La Habana","Helsinki","Oslo","Berlín","Viena","Praga","Varsovia","Estocolmo","Dublín","Dakar","Casablanca","Jerusalén","Mumbai","Shanghái","Cantón","Hong Kong","Seúl","Bangkok","Singapur","Los Ángeles","Chicago","Toronto","Vancouver","Amazonas","Andes","Sahara","Atlántico","Pacífico","Everest","Kilimanjaro","Mont Blanc","Íbex","Canguro","Puma","Jaguar","León","Tigre","Elefante","Rinoceronte","Hipopótamo","Gorila","Chimpancé","Orangután","Delfín","Ballena","Tiburón","Foca","Pingüino","Águila","Búho","Halcón","Lobo","Zorro","Ciervo","Jabalí","Erizo","Zarigüeya","Cisne","Ganso","Pato","Gallo","Gallina","Pavo","Perro","Gato","Conejo","Hámster","Llama","Alpaca","Oveja","Cabra","Vaca","Toro","Caballo","Mula","Burro","Camello","Dromedario","Ñu","Antílope","Mono araña","Perezoso","Tucán","Colibrí","Mariposa","Libélula","Escarabajo","Hormiga","Abeja","Araña","Ciempiés","Serpiente","Cocodrilo","Tortuga","Lagarto","Camaleón","Salamandra","Rana","Sapo","Trucha","Salmón","Atún","Sardina","Camarón","Langosta","Pulpo","Calamar","Guepardo","Hiena","Nutria","Tejón","Mapache","Mofeta","Leonardo","Dalí","Goya","Velázquez","Sorolla","Greta","Einstein","Newton","Galileo","Curie","Colón","Bolívar","San Martín","Simón","Isabel","Catalina","Carlos","Felipe","Juana","Alfonso","Federico","Sofía","Mahatma Gandhi","Nelson Mandela","Martin Luther King","Rosa Parks","Cervantes","Lope de Vega","Garcilaso","Borges","Gabriel García Márquez","Mario Vargas Llosa","Pablo Neruda","Federico García Lorca","Santos","Carmen","Dolores","María","José","Antonio","Luis","Miguel","Diego","Rafael","Óscar","Adriana","Valparaíso","Toledo","Segovia","Granada","Sevilla","Salamanca","Zurich","Basilea","Brujas","Amberes"], 
-          "AZUL": ["Teléfono","Ordenador","Portátil","Ratón","Teclado","Pantalla","Monitor","Impresora","Auriculares","Altavoz","Cámara","Micrófono","Televisor","Mando","Router","Modem","Cargador","Batería","Conector","Cable","Pendrive","Disco duro","Tarjeta","Libro","Revista","Periódico","Cuaderno","Lápiz","Bolígrafo","Marcador","Rotulador","Goma","Sacapuntas","Regla","Calculadora","Agenda","Carpeta","Archivador","Mesa","Silla","Sofá","Cama","Colchón","Pillow","Almohada","Armario","Estantería","Lámpara","Foco","Bombilla","Ventana","Puerta","Cortina","Persiana","Espejo","Reloj","Calendario","Termómetro","Jarrón","Plato","Vaso","Taza","Cuchillo","Tenedor","Cuchara","Olla","Sartén","Cacerola","Horno","Microondas","Frigorífico","Nevera","Lavadora","Secadora","Lavavajillas","Aspiradora","Plancha","Tabla de planchar","Timbre","Candado","Llave","Monedero","Cartera","Maleta","Bolso","Mochila","Sombrero","Gorra","Bufanda","Guantes","Zapato","Bota","Sandalia","Calcetín","Cinturón","Corbata","Camisa","Pantalón","Falda","Vestido","Chaqueta","Abrigo","Traje","Bañador","Toalla","Cepillo","Peine","Cepillo de dientes","Pasta dental","Hilo dental","Jabón","Champú","Acondicionador","Desodorante","Crema","Perfume","Maquillaje","Esmalte","Cepillo de pelo","Secador","Cuchilla","Tijeras","Pinzas","Clavo","Martillo","Destornillador","Taladro","Sierra","Lima","Cinta métrica","Nivel","Escalera","Silla de ruedas","Bastón","Muletas","Botiquín","Termo","Botella","Cantimplora","Tarro","Tetera","Cafetera","Molino","Exprimidor","Licuadora","Batidora","Colador","Tabla de cortar","Tupper","Plástico film","Aluminio","Papel","Cartón","Bolígrafo táctil","Pantalla táctil","Adaptador","Convertidor","Joystick","Consola","Cartucho","Juego de mesa","Fichas","Tablero","Dados","Carta","Baraja","Puzzle","Rompecabezas","Juguete","Muñeco","Robot","Dron","Bicicleta","Patinete","Coche de juguete","Coche","Moto","Camión","Autobús","Tren","Avión","Helicóptero","Barco","Bote","Remo","Ancla","Brújula","Mapa","Linterna","Batería externa","Cámara térmica","Telescopio","Microscopio","Lupa","Termostato","Sensor","Interruptor","Enchufe","Regleta","Filtro"], 
-          "NARANJA": ["Correr","Saltar","Bailar","Cantar","Nadar","Leer","Escribir","Dibujar","Pintar","Cocinar","Hornear","Freír","Asar","Sopletear","Montar","Conducir","Pilotar","Navegar","Remar","Lanzar","Atrapar","Golpear","Patear","Empujar","Tirar","Arrastrar","Levantar","Bajar","Abrir","Cerrar","Encender","Apagar","Cortar","Pegar","Coser","Tejer","Hilar","Cosquillear","Abrazar","Besar","Susurrar","Gritar","Whisper (susurrar)","Respirar","Soplar","Aspirar","Limpiar","Fregar","Barrer","Trapear","Enviar","Recibir","Comer","Masticar","Degustar","Beber","Sorber","Escuchar","Oír","Ver","Mirar","Observar","Examinar","Analizar","Resolver","Imaginar","Soñar","Planear","Organizar","Ordenar","Construir","Destruir","Reparar","Arreglar","Instalar","Desinstalar","Actualizar","Programar","Codificar","Depurar","Traducir","Aprender","Enseñar","Entrenar","Practicar","Meditar","Relajarse","Dormir","Despertar","Vestir","Desvestir","Peinar","Maquillar","Afeitar","Duchar","Bañar","Cepillar","Cuidar","Atender","Sanar","Curar","Operar","Diagnosticar","Investigar","Explorar","Viajar","Descubrir","Buscar","Encontrar","Perseguir","Escapar","Ocultar","Mostrar","Presentar","Mostrar","Participar","Competir","Ganar","Perder","Celebrar","Llorar","Reír","Sonreír","Enfadar","Negociar","Comprar","Vender","Pagar","Cobrar","Ahorra r","Invertir","Prestar","Pedir prestado","Reservar","Cancelar","Confirmar","Fotografiar","Grabar","Editar","Subir","Descargar","Compartir","Imprimir","Copiar","Pegar (digital)","Seleccionar","Arrastrar y soltar","Cerrar sesión","Iniciar sesión","Registrarse","Publicar","Comentar","Valorar","Suscribirse","Desuscribirse","Enviar mensaje","Recibir llamada","Contestar","Colgar","Silenciar","Activar","Desactivar","Conectar","Desconectar","Sincronizar","Configurar","Personalizar","Diseñar","Probar","Evaluar","Optimizar","Reducir","Aumentar","Expandir","Contraer","Mezclar","Separar","Pulir","Lijar","Barnizar","Cantar en coro","Improvisar","Actuar","Dirección (dirigir)","Coreografiar","Ensayar","Estrenar","Programar evento","Reservar asiento","Comprar entrada","Cerrar trato","Firmar","Sellar","Presentar oferta","Negociar precio","Reparar mecánica","Afinar instrumento","Ajustar"], 
-          "VERDE": ["aurora","laberinto","espejismo","sinfonía","dilema","metamorfosis","eco","oasis","crepúsculo","amanecer","atardecer","marea","corriente","remolino","catarata","cascada","gruta","penumbra","sombra","reflejo","destello","prisma","mosaico","cometa","eclipse","constelación","órbita","imán","engranaje","reloj de arena","farol","faro","carámbano","volcán","geoda","océano","archipiélago","duna","acantilado","laguna","estuario","delta","glaciar","caverna","península","bahía","cordillera","meseta","llanura","valle","cañón","garganta","manantial","fuente","remanso","estanque","banco de niebla","bruma","neblina","tormenta","relámpago","rayo","trueno","tornado","ciclón","huracán","granizo","lluvia","chaparrón","llovizna","arcoíris","charco","nevada","avalancha","iceberg","penacho","escarpado","rocalla","pradera","pastizal","matorral","sotobosque","bosquecillo","bosque","selva","jungla","senda","sendero","travesía","molino","barranco","solar","búnker","fortaleza","castillo","torre","muralla","ciudadela","plaza","atalaya","farallón","islote","arrecife","coral","estalactita","estalagmita","cueva","sima","pozo","oquedad","vórtice","turbina","mirador","acueducto","viaducto","canal","esclusa","muelle","embarcadero","fondeadero","astillero","astrolabio","sextante","telescopio","observatorio","mapa","cartografía","topografía","pergamino","códice","vitral","ermita","capilla","monolito","obelisco","menhir","dólmen","cripta","reliquia","sarcófago","catacumba","catapulta","baluarte","bastión","almena","torreón","puente levadizo","atarazana","fragata","carabela","bergantín","galeón","nao","timón","quilla","cubierta","bodega","camarote","casco","ancla","cadena","estribor","babor","popa","proa","toldo","jarcia","cabo","soga","amarre","fondeo","boya","transatlántico","catamarán","velero","yate","chalupa","remo","hélice","motor","propulsor","radar","sonar","gabarrón","pontón","rampa","dársena","atracadero","aparejo","deriva","estiba","bitácora","cuaderna","miraje","panorámica","perspectiva","silencio visual","contraluz","silueta","refugio","mirador natural","saliente","oasis urbano","paraje","mirador costero","terraza natural","isóbata","bordillo","morro","abra"], 
-          "ROJO": ["Internet","Fútbol","Avión","Chocolate","Escuela","Navidad","Vacaciones","Guerra","Dinero","Fiesta","Cumpleaños","Boda","Concierto","Película","Teatro","Festival","Carnaval","Maratón","Carrera","Parque","Piscina","Playa","Montaña","Bosque","Río","Lago","Isla","Ciudad","Aldea","Barrio","Mercado","Supermercado","Restaurante","Cafetería","Panadería","Pastelería","Heladería","Museo","Galería","Biblioteca","Estadio","Cancha","Gimnasio","Polideportivo","Pista","Aeropuerto","Estación","Puerto","Embarcadero","Terminal","Hospital","Clínica","Farmacia","Consultorio","Laboratorio","Universidad","Colegio","Escuela infantil","Guardería","Oficina","Banco","Cajero","Oficina postal","Correos","Teléfono público","Taller","Fábrica","Almacén","Bodega","Estación de servicio","Gasolinera","Carretera","Autopista","Puente","Túnel","Faro","Farola","Semáforo","Rotonda","Cruce","Intersección","Avenida","Calle","Camino","Sendero","Vereda","Acera","Plaza","Monumento","Estatua","Fuente","Jardín","Huerto","Invernadero","Parque infantil","Zona deportiva","Pista de hielo","Pista de skate","Patio","Terraza","Balcon","Ventanilla","Sala","Comedor","Cocina","Despensa","Bodega (casa)","Sótano","Ático","Garaje","Entrada","Vestíbulo","Recepción","Vestuario","Baño","Lavabo","Ducha","Bañera","Inodoro","Papel higiénico","Juguete","Muñeca","Pelota","Cometa","Patineta","Puzle","Instrumento musical","Guitarra","Piano","Violín","Saxofón","Trompeta","Batería","Micrófono","Altavoz","Escenario","Telón","Cámara de fotos","Cámara de vídeo","Lente","Objetivo","Trípode","Libro de recetas","Receta","Lista de la compra","Menú","Carta","Factura","Recibo","Billete","Pasaporte","Visado","Identificación","Carnet","Tarjeta","Permiso","Licencia","Certificado","Diploma","Título","Trofeo","Medalla","Premio","Cupón","Descuento","Oferta","Promoción","Sorteo","Rifa","Subasta","Contrato","Acuerdo","Pacto","Alianza","Sociedad","Empresa","Start-up","Inversión","Acción","Bonos","Dividendo","Interés","Crédito","Hipoteca","Préstamo","Seguro","Póliza","Indemnización","Reclamación","Garantía","Asistencia","Soporte","Atención al cliente","Reclamaciones","Queja","Sugerencia","Encuesta","Opinión","Reseña","Valoración","Mapa del tesoro","Caza del tesoro","Misterio","Detective","Sospechoso","Prueba","Pista","Alibi","Resolución","Final feliz"] } 
+        {
+            "AMARILLO":["Messi","Picasso","Miguel de Cervantes","Shakira","Frida Kahlo","Beyoncé","Messalina","Atenas","Roma","Madrid","Barcelona","Londres","París","Tokio","Nueva York","Buenos Aires","Sídney","El Cairo","Moscú","Lima","Cuzco","Quito","Lisboa","Santiago","Bogotá","Caracas","Montevideo","La Habana","Helsinki","Oslo","Berlín","Viena","Praga","Varsovia","Estocolmo","Dublín","Dakar","Casablanca","Jerusalén","Mumbai","Shanghái","Cantón","Hong Kong","Seúl","Bangkok","Singapur","Los Ángeles","Chicago","Toronto","Vancouver","Amazonas","Andes","Sahara","Atlántico","Pacífico","Everest","Kilimanjaro","Mont Blanc","Íbex","Canguro","Puma","Jaguar","León","Tigre","Elefante","Rinoceronte","Hipopótamo","Gorila","Chimpancé","Orangután","Delfín","Ballena","Tiburón","Foca","Pingüino","Águila","Búho","Halcón","Lobo","Zorro","Ciervo","Jabalí","Erizo","Zarigüeya","Cisne","Ganso","Pato","Gallo","Gallina","Pavo","Perro","Gato","Conejo","Hámster","Llama","Alpaca","Oveja","Cabra","Vaca","Toro","Caballo","Mula","Burro","Camello","Dromedario","Ñu","Antílope","Mono araña","Perezoso","Tucán","Colibrí","Mariposa","Libélula","Escarabajo","Hormiga","Abeja","Araña","Ciempiés","Serpiente","Cocodrilo","Tortuga","Lagarto","Camaleón","Salamandra","Rana","Sapo","Trucha","Salmón","Atún","Sardina","Camarón","Langosta","Pulpo","Calamar","Guepardo","Hiena","Nutria","Tejón","Mapache","Mofeta","Leonardo","Dalí","Goya","Velázquez","Sorolla","Greta","Einstein","Newton","Galileo","Curie","Colón","Bolívar","San Martín","Simón","Isabel","Catalina","Carlos","Felipe","Juana","Alfonso","Federico","Sofía","Mahatma Gandhi","Nelson Mandela","Martin Luther King","Rosa Parks","Cervantes","Lope de Vega","Garcilaso","Borges","Gabriel García Márquez","Mario Vargas Llosa","Pablo Neruda","Federico García Lorca","Santos","Carmen","Dolores","María","José","Antonio","Luis","Miguel","Diego","Rafael","Óscar","Adriana","Valparaíso","Toledo","Segovia","Granada","Sevilla","Salamanca","Zurich","Basilea","Brujas","Amberes"],
+            "AZUL":["Teléfono","Ordenador","Portátil","Ratón","Teclado","Pantalla","Monitor","Impresora","Auriculares","Altavoz","Cámara","Micrófono","Televisor","Mando","Router","Modem","Cargador","Batería","Conector","Cable","Pendrive","Disco duro","Tarjeta","Libro","Revista","Periódico","Cuaderno","Lápiz","Bolígrafo","Marcador","Rotulador","Goma","Sacapuntas","Regla","Calculadora","Agenda","Carpeta","Archivador","Mesa","Silla","Sofá","Cama","Colchón","Pillow","Almohada","Armario","Estantería","Lámpara","Foco","Bombilla","Ventana","Puerta","Cortina","Persiana","Espejo","Reloj","Calendario","Termómetro","Jarrón","Plato","Vaso","Taza","Cuchillo","Tenedor","Cuchara","Olla","Sartén","Cacerola","Horno","Microondas","Frigorífico","Nevera","Lavadora","Secadora","Lavavajillas","Aspiradora","Plancha","Tabla de planchar","Timbre","Candado","Llave","Monedero","Cartera","Maleta","Bolso","Mochila","Sombrero","Gorra","Bufanda","Guantes","Zapato","Bota","Sandalia","Calcetín","Cinturón","Corbata","Camisa","Pantalón","Falda","Vestido","Chaqueta","Abrigo","Traje","Bañador","Toalla","Cepillo","Peine","Cepillo de dientes","Pasta dental","Hilo dental","Jabón","Champú","Acondicionador","Desodorante","Crema","Perfume","Maquillaje","Esmalte","Cepillo de pelo","Secador","Cuchilla","Tijeras","Pinzas","Clavo","Martillo","Destornillador","Taladro","Sierra","Lima","Cinta métrica","Nivel","Escalera","Silla de ruedas","Bastón","Muletas","Botiquín","Termo","Botella","Cantimplora","Tarro","Tetera","Cafetera","Molino","Exprimidor","Licuadora","Batidora","Colador","Tabla de cortar","Tupper","Plástico film","Aluminio","Papel","Cartón","Bolígrafo táctil","Pantalla táctil","Adaptador","Convertidor","Joystick","Consola","Cartucho","Juego de mesa","Fichas","Tablero","Dados","Carta","Baraja","Puzzle","Rompecabezas","Juguete","Muñeco","Robot","Dron","Bicicleta","Patinete","Coche de juguete","Coche","Moto","Camión","Autobús","Tren","Avión","Helicóptero","Barco","Bote","Remo","Ancla","Brújula","Mapa","Linterna","Batería externa","Cámara térmica","Telescopio","Microscopio","Lupa","Termostato","Sensor","Interruptor","Enchufe","Regleta","Filtro"],
+            "NARANJA":["Correr","Saltar","Bailar","Cantar","Nadar","Leer","Escribir","Dibujar","Pintar","Cocinar","Hornear","Freír","Asar","Sopletear","Montar","Conducir","Pilotar","Navegar","Remar","Lanzar","Atrapar","Golpear","Patear","Empujar","Tirar","Arrastrar","Levantar","Bajar","Abrir","Cerrar","Encender","Apagar","Cortar","Pegar","Coser","Tejer","Hilar","Cosquillear","Abrazar","Besar","Susurrar","Gritar","Whisper (susurrar)","Respirar","Soplar","Aspirar","Limpiar","Fregar","Barrer","Trapear","Enviar","Recibir","Comer","Masticar","Degustar","Beber","Sorber","Escuchar","Oír","Ver","Mirar","Observar","Examinar","Analizar","Resolver","Imaginar","Soñar","Planear","Organizar","Ordenar","Construir","Destruir","Reparar","Arreglar","Instalar","Desinstalar","Actualizar","Programar","Codificar","Depurar","Traducir","Aprender","Enseñar","Entrenar","Practicar","Meditar","Relajarse","Dormir","Despertar","Vestir","Desvestir","Peinar","Maquillar","Afeitar","Duchar","Bañar","Cepillar","Cuidar","Atender","Sanar","Curar","Operar","Diagnosticar","Investigar","Explorar","Viajar","Descubrir","Buscar","Encontrar","Perseguir","Escapar","Ocultar","Mostrar","Presentar","Amar","Participar","Competir","Ganar","Perder","Celebrar","Llorar","Reír","Sonreír","Enfadar","Negociar","Comprar","Vender","Pagar","Cobrar","Ahorrar","Invertir","Prestar","Pedir prestado","Reservar","Cancelar","Confirmar","Fotografiar","Grabar","Editar","Subir","Descargar","Compartir","Imprimir","Copiar","Pegar (digital)","Seleccionar","Arrastrar y soltar","Cerrar sesión","Iniciar sesión","Registrarse","Publicar","Comentar","Valorar","Suscribirse","Desuscribirse","Enviar mensaje","Recibir llamada","Contestar","Colgar","Silenciar","Activar","Desactivar","Conectar","Desconectar","Sincronizar","Configurar","Personalizar","Diseñar","Probar","Evaluar","Optimizar","Reducir","Aumentar","Expandir","Contraer","Mezclar","Separar","Pulir","Lijar","Barnizar","Cantar en coro","Improvisar","Actuar","Dirección (dirigir)","Coreografiar","Ensayar","Estrenar","Programar evento","Reservar asiento","Comprar entrada","Cerrar trato","Firmar","Sellar","Presentar oferta","Negociar precio","Reparar mecánica","Afinar instrumento","Ajustar"],
+            "VERDE":["aurora","laberinto","espejismo","sinfonía","dilema","metamorfosis","eco","oasis","crepúsculo","amanecer","atardecer","marea","corriente","remolino","catarata","cascada","gruta","penumbra","sombra","reflejo","destello","prisma","mosaico","cometa","eclipse","constelación","órbita","imán","engranaje","reloj de arena","farol","faro","carámbano","volcán","geoda","océano","archipiélago","duna","acantilado","laguna","estuario","delta","glaciar","caverna","península","bahía","cordillera","meseta","llanura","valle","cañón","garganta","manantial","fuente","remanso","estanque","banco de niebla","bruma","neblina","tormenta","relámpago","rayo","trueno","tornado","ciclón","huracán","granizo","lluvia","chaparrón","llovizna","arcoíris","charco","nevada","avalancha","iceberg","penacho","escarpado","rocalla","pradera","pastizal","matorral","sotobosque","bosquecillo","bosque","selva","jungla","senda","sendero","travesía","molino","barranco","solar","búnker","fortaleza","castillo","torre","muralla","ciudadela","plaza","atalaya","farallón","islote","arrecife","coral","estalactita","estalagmita","cueva","sima","pozo","oquedad","vórtice","turbina","mirador","acueducto","viaducto","canal","esclusa","muelle","embarcadero","fondeadero","astillero","astrolabio","sextante","telescopio","observatorio","mapa","cartografía","topografía","pergamino","códice","vitral","ermita","capilla","monolito","obelisco","menhir","dólmen","cripta","reliquia","sarcófago","catacumba","catapulta","baluarte","bastión","almena","torreón","puente levadizo","atarazana","fragata","carabela","bergantín","galeón","nao","timón","quilla","cubierta","bodega","camarote","casco","ancla","cadena","estribor","babor","popa","proa","toldo","jarcia","cabo","soga","amarre","fondeo","boya","transatlántico","catamarán","velero","yate","chalupa","remo","hélice","motor","propulsor","radar","sonar","gabarrón","pontón","rampa","dársena","atracadero","aparejo","deriva","estiba","bitácora","cuaderna","miraje","panorámica","perspectiva","silencio visual","contraluz","silueta","refugio","mirador natural","saliente","oasis urbano","paraje","mirador costero","terraza natural","isóbata","bordillo","morro","abra"],
+            "ROJO":["Internet","Fútbol","Avión","Chocolate","Escuela","Navidad","Vacaciones","Guerra","Dinero","Fiesta","Cumpleaños","Boda","Concierto","Película","Teatro","Festival","Carnaval","Maratón","Carrera","Parque","Piscina","Playa","Montaña","Bosque","Río","Lago","Isla","Ciudad","Aldea","Barrio","Mercado","Supermercado","Restaurante","Cafetería","Panadería","Pastelería","Heladería","Museo","Galería","Biblioteca","Estadio","Cancha","Gimnasio","Polideportivo","Pista","Aeropuerto","Estación","Puerto","Embarcadero","Terminal","Hospital","Clínica","Farmacia","Consultorio","Laboratorio","Universidad","Colegio","Escuela infantil","Guardería","Oficina","Banco","Cajero","Oficina postal","Correos","Teléfono público","Taller","Fábrica","Almacén","Bodega","Estación de servicio","Gasolinera","Carretera","Autopista","Puente","Túnel","Faro","Farola","Semáforo","Rotonda","Cruce","Intersección","Avenida","Calle","Camino","Sendero","Vereda","Acera","Plaza","Monumento","Estatua","Fuente","Jardín","Huerto","Invernadero","Parque infantil","Zona deportiva","Pista de hielo","Pista de skate","Patio","Terraza","Balcon","Ventanilla","Sala","Comedor","Cocina","Despensa","Bodega (casa)","Sótano","Ático","Garaje","Entrada","Vestíbulo","Recepción","Vestuario","Baño","Lavabo","Ducha","Bañera","Inodoro","Papel higiénico","Juguete","Muñeca","Pelota","Cometa","Patineta","Puzle","Instrumento musical","Guitarra","Piano","Violín","Saxofón","Trompeta","Batería","Micrófono","Altavoz","Escenario","Telón","Cámara de fotos","Cámara de vídeo","Lente","Objetivo","Trípode","Libro de recetas","Receta","Lista de la compra","Menú","Carta","Factura","Recibo","Billete","Pasaporte","Visado","Identificación","Carnet","Tarjeta","Permiso","Licencia","Certificado","Diploma","Título","Trofeo","Medalla","Premio","Cupón","Descuento","Oferta","Promoción","Sorteo","Rifa","Subasta","Contrato","Acuerdo","Pacto","Alianza","Sociedad","Empresa","Start-up","Inversión","Acción","Bonos","Dividendo","Interés","Crédito","Hipoteca","Préstamo","Seguro","Póliza","Indemnización","Reclamación","Garantía","Asistencia","Soporte","Atención al cliente","Reclamaciones","Queja","Sugerencia","Encuesta","Opinión","Reseña","Valoración","Mapa del tesoro","Caza del tesoro","Misterio","Detective","Sospechoso","Prueba","Pista","Alibi","Resolución","Final feliz"]
+        } 
     </script>
     <script>
-        /* ------------------ CONFIG ------------------ */
+        /* ---------------- CONFIG ---------------- */
         const IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/3/34/Pictionary_game_logo.png";
-
         const CAT_CONFIG = { AMARILLO: { color: 'bg-yellow-400', text: 'text-black', label: 'Persona / Lugar / Animal', help: 'Nombres propios, famosos, fauna y geografía.' }, AZUL: { color: 'bg-blue-500', text: 'text-white', label: 'Objeto', help: 'Cosas visibles, partes del cuerpo, alimentos.' }, NARANJA: { color: 'bg-orange-500', text: 'text-white', label: 'Acción', help: 'Verbos y actividades.' }, VERDE: { color: 'bg-green-600', text: 'text-white', label: 'Difícil', help: 'Conceptos abstractos o palabras complejas.' }, ROJO: { color: 'bg-red-600', text: 'text-white', label: 'Todos Juegan', help: '¡Todos los equipos dibujan a la vez!' } };
-
         const WORD_LISTS = JSON.parse(document.getElementById('words-json').textContent);
-
         const BOARD_MAP = ['ROJO', 'AMARILLO', 'AZUL', 'NARANJA', 'VERDE', null, 'ROJO', 'AMARILLO', 'AZUL', 'NARANJA', 'VERDE', 'VERDE', null, null, null, 'ROJO', null, 'VERDE', null, null, null, 'ROJO', 'NARANJA', null, null, null, 'AMARILLO', 'AZUL', 'NARANJA', null, null, null, 'AMARILLO', 'AZUL', null, null, null, null, null, null, null, null, null, 'AZUL', 'AMARILLO', 'ROJO', 'VERDE', null, null, null, null, null, 'ROJO', 'VERDE', 'NARANJA', null, null, 'NARANJA', null, null, null, null, null, null, null, null, 'ROJO', 'AMARILLO', 'AZUL', null, null, null, null, null, 'AMARILLO', 'AZUL', 'NARANJA', 'VERDE', null, null, null, null, null, null, null, null, null, 'VERDE', 'NARANJA', null, null, null, 'ROJO', 'VERDE', 'NARANJA', null, null, null, 'ROJO', 'AZUL', null, null, null, 'AMARILLO', null, 'AZUL', null, null, null, 'AMARILLO', 'AMARILLO', 'ROJO', 'VERDE', 'NARANJA', 'AZUL', null, 'AMARILLO', 'ROJO', 'VERDE', 'NARANJA', 'AZUL'];
-
         const PATH = [74, 75, 76, 87, 98, 109, 120, 119, 118, 117, 116, 105, 94, 93, 92, 103, 114, 113, 112, 111, 110, 99, 88, 77, 66, 67, 68, 57, 46, 45, 44, 33, 22, 11, 0, 1, 2, 3, 4, 15, 26, 27, 28, 17, 6, 7, 8, 9, 10, 21, 32, 43, 54, 53, 52];
-
         const START_POS = 74;
-
         const FINAL_POS = 52;
-
-        /* ------------------ Estado global ------------------ */
+        const PATH_INDEX = Object.fromEntries(PATH.map((p, i) => [p, i]));
         let g = { teams: [], turn: 0, mustRoll: false, timerInterval: null, isAllPlay: false, changeLeft: 3, prevTurn: null, currentWord: null };
-
-        /* audio helper */
         let audioCtx = null;
-
+        let soundEnabled = true;
+        let isLight = false;
+        let tvMode = false;
         function ensureAudioCtx() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-        function playTone(freq, duration = 200, type = 'sine', when = 0) {
+        function toggleTheme() {
+            isLight = !isLight;
+            document.body.classList.toggle('light-mode', isLight);
+            document.getElementById('theme-toggle').innerText =
+                isLight ? '☀️' : '🌙';
+        }
+        function toggleTVMode() {
+            tvMode = !tvMode;
+            document.body.classList.toggle('tv-mode', tvMode);
+            document.getElementById('tv-toggle').innerText =
+                tvMode ? '❌' : '📺';
+
+            // Recalcular tablero e imagen central
+            setTimeout(() => {
+                updateBoardScale();
+                placeCenterImage();
+            }, 50);
+        }
+        function playTone(freq, d = 200, type = 'sine', when = 0) {
+            if (!soundEnabled) return;
             try {
                 ensureAudioCtx();
                 const o = audioCtx.createOscillator();
-
                 const gNode = audioCtx.createGain();
-
                 o.type = type;
                 o.frequency.value = freq;
-
                 o.connect(gNode);
                 gNode.connect(audioCtx.destination);
-
                 const now = audioCtx.currentTime + when;
                 gNode.gain.setValueAtTime(0.0001, now);
-
                 gNode.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
-
                 o.start(now);
-
-                gNode.gain.exponentialRampToValueAtTime(0.0001, now + duration / 1000);
-
-                o.stop(now + duration / 1000 + 0.02);
+                gNode.gain.exponentialRampToValueAtTime(0.0001, now + d / 1000);
+                o.stop(now + d / 1000 + 0.02);
             } catch (e) {
                 console.warn('audio error', e);
             }
-        }
-        function playTick() {
+        } function playTick() {
             playTone(900, 120, 'square');
-        }
-        function playDefeat() {
+        } function playDefeat() {
             playTone(220, 400, 'sine');
-        }
-        function playVictory() {
+        } function playVictory() {
             playTone(880, 200, 'sine');
-
             setTimeout(() => playTone(1100, 200, 'sine'), 220);
         }
-        /* variables para animación del dado */
-        let rollInterval = null;
-
-        let rollTimeout = null;
-
-        let rollAnimationTimeout = null;
-
-        /* ------------------ Escalado automático del tablero ------------------ */
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-toggle').innerText =
+                soundEnabled ? '🔊' : '🔇';
+        }
+        let rollInterval = null, rollTimeout = null, rollAnimationTimeout = null;
+        /* --- Escalado tablero (se ajusta al ancho del board-wrap) --- */
         function updateBoardScale() {
             const wrap = document.getElementById('board-wrap');
-
             const board = document.getElementById('board');
             if (!wrap || !board) return;
 
-            // ancho disponible dentro del wrap (padding incluido) 
-            const availableWidth = wrap.clientWidth;
+            // ancho real disponible
+            const availableWidth = wrap.clientWidth - 16;
 
-            // tamaño "natural" del tablero (sin escala) 
-            // usamos scrollWidth del board (natural grid width) 
-            const naturalWidth = board.scrollWidth || (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile-size')) * 11);
+            // ancho natural del tablero (11 columnas)
+            const tileSize = parseFloat(
+                getComputedStyle(document.documentElement)
+                    .getPropertyValue('--tile-size')
+            );
+            const gap = parseFloat(
+                getComputedStyle(document.documentElement)
+                    .getPropertyValue('--tile-gap')
+            );
 
-            // calcular escala para encajar horizontalmente sin overflow 
+            const naturalWidth = (tileSize * 11) + (gap * 10);
+
+            // escala segura
             const scale = Math.min(1, availableWidth / naturalWidth);
 
-            // aplicar escala mediante transform y variable CSS 
             board.style.transform = `scale(${scale})`;
+            board.style.transformOrigin = 'top center';
 
-            document.documentElement.style.setProperty('--board-scale', scale);
+            // evita desbordes visuales
+            wrap.style.overflowX = 'hidden';
 
-            // ajustar la altura del wrapper para que el tablero escalado quepa y permita scroll vertical 
-            const naturalHeight = board.scrollHeight || (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile-size')) * 11);
+            // ajusta altura del contenedor
+            const naturalHeight = board.scrollHeight;
+            if (window.innerWidth < 900) {
+                wrap.style.height = `${Math.ceil(naturalHeight * scale)}px`;
+            } else {
+                wrap.style.height = 'auto';
+            }
 
-            const scaledHeight = naturalHeight * scale;
-
-            wrap.style.height = `${Math.max(scaledHeight, 200)}px`;
-
-            // mínimo 200px para panel inferior 
-            // tras escalar, reposicionar la imagen central 
-            setTimeout(placeCenterImage, 40);
+            setTimeout(placeCenterImage, 30);
         }
-        /* ------------------ Render tablero y colocación imagen central ------------------ */
         function renderBoard() {
             const b = document.getElementById('board');
-
-            // limpiar tiles previos 
             [...b.querySelectorAll('[id^="tile-"]')].forEach(el => el.remove());
-
-            for (let i = 0;
-                i < BOARD_MAP.length;
-                i++) {
+            for (let i = 0; i < BOARD_MAP.length; i++) {
                 const catKey = BOARD_MAP[i];
-
                 const tile = document.createElement('div');
                 tile.id = `tile-${i}`;
-
                 tile.className = `w-full h-full rounded-lg flex items-center justify-center text-sm relative overflow-hidden z-10`;
-
                 if (catKey === null) {
                     tile.classList.add('bg-transparent', 'border', 'border-transparent');
-
                     tile.innerHTML = `<div id="tks-${i}" class="absolute inset-0 flex items-center justify-center gap-1 p-1"></div>`;
-
                 } else {
                     const cfg = CAT_CONFIG[catKey];
-
                     const inicial = catKey.charAt(0).toUpperCase();
-
-                    // aplicar clases de color si Tailwind está presente, si no, dejará estilos fallback
                     tile.classList.add(cfg.color, cfg.text, 'font-black', 'shadow-inner');
-
                     tile.innerHTML = `<span class="text-sm">${inicial}</span><div id="tks-${i}" class="absolute inset-0 flex items-center justify-center gap-1 p-1"></div>`;
-
                 } b.appendChild(tile);
-
-            }
-            // después de crear el DOM del tablero, ajustar escala 
-            // con un pequeño delay para que scrollWidth/scrollHeight estén disponibles 
-            setTimeout(updateBoardScale, 20);
-
-        }
-        function placeCenterImage() {
-            const wrap = document.getElementById('board-wrap');
-
-            const board = document.getElementById('board');
-
+            } setTimeout(updateBoardScale, 20);
+        } function placeCenterImage() {
             const wrapElem = document.getElementById('board-wrap');
-
-            const wrapRect = wrapElem.getBoundingClientRect();
-
-            // índices que delimitan el bloque 3x3 (esquinas) 
-            const firstTile = document.getElementById(`tile-48`);
-
-            const lastTile = document.getElementById(`tile-72`);
-
+            const firstTile = document.getElementById('tile-48');
+            const lastTile = document.getElementById('tile-72');
             const imgWrap = document.getElementById('center-img-wrap');
-
-            if (!firstTile || !lastTile || !wrap || !imgWrap) {
+            if (!firstTile || !lastTile || !wrapElem || !imgWrap) {
                 setTimeout(placeCenterImage, 50);
-
                 return;
-
-            }
+            } const wrapRect = wrapElem.getBoundingClientRect();
             const firstRect = firstTile.getBoundingClientRect();
-
             const lastRect = lastTile.getBoundingClientRect();
-
-            const left = firstRect.left - wrapRect.left + wrap.scrollLeft;
-
-            const top = firstRect.top - wrapRect.top + wrap.scrollTop;
-
-            const right = lastRect.right - wrapRect.left + wrap.scrollLeft;
-
-            const bottom = lastRect.bottom - wrapRect.top + wrap.scrollTop;
-
+            const left = firstRect.left - wrapRect.left + wrapElem.scrollLeft;
+            const top = firstRect.top - wrapRect.top + wrapElem.scrollTop;
+            const right = lastRect.right - wrapRect.left + wrapElem.scrollLeft;
+            const bottom = lastRect.bottom - wrapRect.top + wrapElem.scrollTop;
             const width = Math.max(0, right - left);
-
             const height = Math.max(0, bottom - top);
-
             imgWrap.style.left = `${left}px`;
-
             imgWrap.style.top = `${top}px`;
-
             imgWrap.style.width = `${width}px`;
-
             imgWrap.style.height = `${height}px`;
-
             imgWrap.style.display = 'flex';
-
             imgWrap.style.alignItems = 'center';
-
             imgWrap.style.justifyContent = 'center';
-
             imgWrap.style.overflow = 'hidden';
-
             const existing = document.getElementById('center-img');
-
-            if (existing) {
-                existing.src = IMAGE_URL;
-            }
-            else {
-                imgWrap.innerHTML = `<img id="center-img" src="${IMAGE_URL}" alt="center" style="object-fit:contain; width:100%; height:100%; max-width:100%; max-height:100%; opacity:0.98; pointer-events:none; ">`;
-            }
-        }
-        window.addEventListener('resize', () => {
+            if (existing) existing.src = IMAGE_URL;
+            else imgWrap.innerHTML = `<img id="center-img" src="${IMAGE_URL}" alt="center" style="object-fit:contain;width:100%;height:100%;max-width:100%;max-height:100%;opacity:0.98;pointer-events:none;">`;
+        } window.addEventListener('resize', () => {
             setTimeout(() => {
                 updateBoardScale();
             }, 40);
         });
-
         window.addEventListener('orientationchange', () => {
             setTimeout(() => {
                 updateBoardScale();
             }, 120);
         });
-
         document.addEventListener('DOMContentLoaded', () => {
-            // inicializamos el placeCenterImage por si se abre directamente en pantalla de juego 
+            const wrap = document.getElementById('board-wrap');
+            if (wrap) wrap.addEventListener('scroll', () => placeCenterImage());
             setTimeout(() => placeCenterImage(), 120);
         });
-
-        /* ------------------ Helpers UI y game logic ------------------ */
+        /* ---------------- Helpers y lógica del juego (igual que antes) ---------------- */
         function addTeamField() {
             const container = document.getElementById('teams-container');
-
             if (container.children.length >= 4) return;
-
             const input = document.createElement('input');
-
             input.className = "team-in w-full p-4 rounded-xl bg-slate-700 border-none focus:ring-2 ring-yellow-500";
-
             input.value = `Equipo ${container.children.length + 1}`;
-
             container.appendChild(input);
         }
         function initGame() {
             const inputs = document.querySelectorAll('.team-in');
-
             const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'];
-
             g.teams = Array.from(inputs).map((inp, i) => ({ name: inp.value || `Equipo ${i + 1}`, pos: START_POS, color: colors[i] || '#9CA3AF' }));
             g.turn = 0;
             g.mustRoll = false;
@@ -760,17 +859,19 @@
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             renderBoard();
-            // after render, ensure center image placed and UI updated 
             setTimeout(() => {
                 placeCenterImage();
                 updateUI();
             }, 120);
-            // resume audio context on interaction if needed 
             try {
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             } catch (e) { }
         }
         function updateUI() {
+            const header = document.querySelector('.game-header');
+            header.classList.remove('header-turn-indicator');
+            void header.offsetWidth;
+            header.classList.add('header-turn-indicator');
             const team = g.teams[g.turn];
             if (g.prevTurn !== g.turn) {
                 g.changeLeft = 3;
@@ -779,8 +880,11 @@
             } const catKey = getCatAt(team.pos);
             const cfg = (catKey && CAT_CONFIG[catKey]) ? CAT_CONFIG[catKey] : null;
             const nameDisp = document.getElementById('current-team-name');
+            nameDisp.classList.remove('turn-animate');
+            void nameDisp.offsetWidth; // force reflow
             nameDisp.innerText = team.name;
             nameDisp.style.color = team.color;
+            nameDisp.classList.add('turn-animate');
             const pill = document.getElementById('cat-pill');
             if (cfg) {
                 pill.innerText = cfg.label;
@@ -799,35 +903,71 @@
             resetPhases();
             drawTokens();
             highlightActiveTile();
-        } function resetPhases() {
+        }
+        function resetPhases() {
             document.getElementById('btn-see-card').classList.remove('hidden');
             document.getElementById('word-reveal-area').classList.add('hidden');
             document.getElementById('timer-active-area').classList.add('hidden');
             clearInterval(g.timerInterval);
             g.currentWord = null;
-        } function drawTokens() {
+        }
+
+        let lastPositions = [];
+
+        function drawTokens() {
+            const positions = g.teams.map(t => t.pos);
+            if (JSON.stringify(positions) === JSON.stringify(lastPositions)) return;
+            lastPositions = [...positions];
+
+
             document.querySelectorAll('[id^="tks-"]').forEach(el => el.innerHTML = '');
+
+
             const counts = {};
             g.teams.forEach(t => counts[t.pos] = (counts[t.pos] || 0) + 1);
+
+
             g.teams.forEach((t, i) => {
-                const container = document.getElementById(`tks-${t.pos}`);
-                if (!container) return;
-                const count = counts[t.pos] || 0;
-                if (count === 4) {
-                    container.className = "absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-1 items-center justify-items-center z-20";
-                } else {
-                    container.className = "absolute inset-0 flex items-center justify-center gap-1 p-1 z-20";
-                } const dot = document.createElement('div');
-                dot.className = `token w-5 h-5 rounded-full border border-slate-900 shadow-md ${i === g.turn ? 'ring-2 ring-white scale-110 z-30' : ''}`;
+                const c = document.getElementById(`tks-${t.pos}`);
+                if (!c) return;
+
+
+                c.className = counts[t.pos] >= 3
+                    ? 'absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-1 items-center justify-items-center z-20'
+                    : 'absolute inset-0 flex items-center justify-center gap-1 p-1 z-20';
+
+
+                const dot = document.createElement('div');
+                dot.className = `token ${i === g.turn ? 'active' : ''}`;
                 dot.style.backgroundColor = t.color;
-                container.appendChild(dot);
+                c.appendChild(dot);
             });
-        } function getCatAt(pos) {
+        }
+        function getCatAt(pos) {
             if (pos == null || pos < 0 || pos >= BOARD_MAP.length) return null;
             return BOARD_MAP[pos];
-        } function pathIndexOf(pos) {
-            return PATH.indexOf(pos);
-        } function changeWord() {
+        }
+        function pathIndexOf(pos) {
+            return PATH_INDEX[pos] ?? 0;
+        }
+        function moveTeamAnimated(team, steps, callback) {
+            let idx = pathIndexOf(team.pos);
+            let target = Math.min(idx + steps, PATH.length - 1);
+
+            function step() {
+                if (idx >= target) {
+                    if (callback) callback();
+                    return;
+                }
+                idx++;
+                team.pos = PATH[idx];
+                drawTokens();
+                highlightActiveTile();
+                setTimeout(step, 220);
+            }
+            step();
+        }
+        function changeWord() {
             if (g.changeLeft <= 0) return;
             const team = g.teams[g.turn];
             const cat = getCatAt(team.pos);
@@ -848,7 +988,6 @@
                 document.getElementById('btn-change-word').classList.add('opacity-50', 'cursor-not-allowed');
             }
         }
-        /* ------------------ Dados animados y tamaño final aumentado ------------------ */
         function rollDice() {
             const finalRoll = Math.floor(Math.random() * 6) + 1;
             const faces = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
@@ -870,28 +1009,29 @@
                     rollInterval = null;
                 } if (diceBtn) diceBtn.classList.remove('dice-rolling');
                 faceSpan.innerText = (faces[finalRoll] && faces[finalRoll].trim() !== "") ? faces[finalRoll] : `${finalRoll}`;
-                // agrandar cara final 
                 faceSpan.classList.add('dice-face-final');
                 const SHOW_MS = 2800;
                 rollTimeout = setTimeout(() => {
-                    // quitar efecto antes de mover 
                     faceSpan.classList.remove('dice-face-final');
                     const team = g.teams[g.turn];
                     let curIdx = pathIndexOf(team.pos);
                     if (curIdx === -1) curIdx = 0;
                     let newIdx = curIdx + finalRoll;
                     if (newIdx >= PATH.length) newIdx = PATH.length - 1;
-                    team.pos = PATH[newIdx];
+                    /*team.pos = PATH[newIdx];
                     g.mustRoll = false;
-                    updateUI();
+                    updateUI();*/
+                    const steps = finalRoll;
+                    moveTeamAnimated(team, steps, () => {
+                        g.mustRoll = false;
+                        updateUI();
+                    });
                     if (diceBtn) diceBtn.disabled = false;
                     rollTimeout = null;
                 }, SHOW_MS);
                 rollAnimationTimeout = null;
             }, SPIN_MS);
-        }
-        /* ------------------ Mostrar / temporizador ------------------ */
-        function stepRevealWord() {
+        } function stepRevealWord() {
             const cat = getCatAt(g.teams[g.turn].pos);
             if (!cat) return;
             const pool = WORD_LISTS[cat];
@@ -912,8 +1052,7 @@
                 changeBtn.disabled = true;
                 changeBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
-        }
-        function stepStartTimer() {
+        } function stepStartTimer() {
             document.getElementById('word-reveal-area').classList.add('hidden');
             document.getElementById('timer-active-area').classList.remove('hidden');
             document.getElementById('status-badge').innerText = "FASE: ¡DIBUJA YA!";
@@ -927,7 +1066,7 @@
             } let segs = 60;
             const tText = document.getElementById('timer-text');
             tText.classList.remove('timer-low');
-            tText.innerText = `01:00`;
+            tText.innerText = '01:00';
             clearInterval(g.timerInterval);
             g.timerInterval = setInterval(() => {
                 segs--;
@@ -939,8 +1078,7 @@
                     playDefeat();
                 }
             }, 1000);
-        }
-        function setupAllPlayButtons() {
+        } function setupAllPlayButtons() {
             const container = document.getElementById('winner-selector');
             container.innerHTML = '';
             g.teams.forEach((t, i) => {
@@ -956,8 +1094,7 @@
             none.innerText = "NADIE";
             none.onclick = () => resolveTurn(false);
             container.appendChild(none);
-        }
-        function resolveTurn(success, winnerIdx = null) {
+        } function resolveTurn(success, winnerIdx = null) {
             clearInterval(g.timerInterval);
             if (g.isAllPlay) {
                 if (winnerIdx !== null) {
@@ -986,17 +1123,18 @@
                     g.changeLeft = 3;
                 }
             } updateUI();
-        } function highlightActiveTile() {
-            document.querySelectorAll('[id^="tile-"]').forEach(el => el.classList.remove('ring-4', 'ring-white', 'scale-105'));
-            const tile = document.getElementById(`tile-${g.teams[g.turn].pos}`);
-            if (tile) tile.classList.add('ring-4', 'ring-white', 'scale-105');
         }
-        /* ------------------ Reiniciar partida ------------------ */
+        function highlightActiveTile() {
+            document.querySelectorAll('[id^="tile-"]').forEach(el =>
+                el.classList.remove('tile-active')
+            );
+            const tile = document.getElementById(`tile-${g.teams[g.turn].pos}`);
+            if (tile) tile.classList.add('tile-active');
+        }
         function confirmReset() {
-            if (confirm('¿Seguro que quieres reiniciar la partida? Se perderá el progreso actual.')) {
-                resetGame();
-            }
-        } function resetGame() {
+            if (confirm('¿Seguro que quieres reiniciar la partida? Se perderá el progreso actual.')) resetGame();
+        }
+        function resetGame() {
             clearInterval(g.timerInterval);
             g.timerInterval = null;
             if (rollInterval) {
@@ -1045,14 +1183,7 @@
                 }
             } catch (e) { } const wrap = document.getElementById('center-img-wrap');
             if (wrap) wrap.innerHTML = '';
-        } /* ------------------ Inicialización DOM ------------------ */
-        document.addEventListener('DOMContentLoaded', () => {
-            // Colocamos listeners de scroll para reubicar la imagen central 
-            const wrap = document.getElementById('board-wrap');
-            if (wrap) wrap.addEventListener('scroll', () => placeCenterImage());
-            // primer intento de colocar imagen si ya está en pantalla de juego 
-            setTimeout(() => placeCenterImage(), 120);
-        }); 
+        }  
     </script>
 </body>
 
